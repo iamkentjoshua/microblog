@@ -1,5 +1,6 @@
 from flask import current_app, url_for
-from app import db, login
+from app import login
+from app.extensions import db
 from app.search import add_to_index, remove_from_index, query_index
 from datetime import datetime, timezone, timedelta
 from flask_login import UserMixin
@@ -112,6 +113,7 @@ class User(PaginatedAPIMixin, UserMixin, db.Model):
     token: so.Mapped[Optional[str]] = so.mapped_column(
         sa.String(32), index=True, unique=True)
     token_expiration: so.Mapped[Optional[datetime]]
+    role: so.Mapped[str] = so.mapped_column(sa.String(16), default='user', index=True)
     
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -189,6 +191,7 @@ class User(PaginatedAPIMixin, UserMixin, db.Model):
             'post_count': self.posts_count(),
             'follower_count': self.followers_count(),
             'following_count': self.following_count(),
+            'role': self.role,
             '_links': {
                 'self': url_for('api.get_user', id=self.id),
                 'followers': url_for('api.get_followers', id=self.id),
@@ -204,6 +207,8 @@ class User(PaginatedAPIMixin, UserMixin, db.Model):
         for field in ['username', 'email', 'about_me']:
             if field in data:
                 setattr(self, field, data[field])
+        if not new_user and 'role' in data:
+            self.role = data['role']
         if new_user and 'password' in data:
             self.set_password(data['password'])
     

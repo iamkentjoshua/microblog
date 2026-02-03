@@ -2,6 +2,7 @@ import logging
 from logging.handlers import SMTPHandler, RotatingFileHandler
 import os
 from elasticsearch import Elasticsearch
+from app.extensions import db, login, limiter, babel
 from flask import Flask, request, current_app
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -11,12 +12,9 @@ from flask_moment import Moment
 from flask_babel import Babel, lazy_gettext as _l
 from config import Config
 
-
 def get_locale():
     return request.accept_languages.best_match(current_app.config['LANGUAGES'])
 
-
-db = SQLAlchemy()
 migrate = Migrate()
 login = LoginManager()
 login.login_view = 'auth.login'
@@ -29,6 +27,7 @@ babel = Babel()
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
+
     db.init_app(app)
     migrate.init_app(app, db)
     app.elasticsearch = Elasticsearch([app.config['ELASTICSEARCH_URL']]) if app.config['ELASTICSEARCH_URL'] else None
@@ -36,6 +35,7 @@ def create_app(config_class=Config):
     mail.init_app(app)
     moment.init_app(app)
     babel.init_app(app, locale_selector=get_locale)
+    limiter.init_app(app)
 
     from app.errors import bp as errors_bp
     app.register_blueprint(errors_bp)
@@ -83,6 +83,5 @@ def create_app(config_class=Config):
         app.logger.info('Microblog startup')
 
     return app
-
 
 from app import models

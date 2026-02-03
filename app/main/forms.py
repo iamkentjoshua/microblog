@@ -4,7 +4,7 @@ from wtforms import StringField, SubmitField, TextAreaField
 from wtforms.validators import ValidationError, DataRequired, Length
 import sqlalchemy as sa
 from flask_babel import _, lazy_gettext as _l
-from app import db
+from app.extensions import db
 from app.models import User
 
 

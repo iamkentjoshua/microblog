@@ -3,7 +3,7 @@ from urllib.parse import urlsplit
 from flask_login import login_user, logout_user, current_user
 from flask_babel import _
 import sqlalchemy as sa
-from app import db
+from app.extensions import db
 from app.auth import bp
 from app.auth.forms import LoginForm, RegistrationForm, \
     ResetPasswordRequestForm, ResetPasswordForm
