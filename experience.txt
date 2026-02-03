@@ -1,0 +1,18 @@
+Writing the whole service was challenging for me 
+since I am not a developer and this was my first 
+time working with Flask. Trying to understand Flask’s structure, 
+application context, and how authentication and database 
+layers fit together required extra effort and learning.
+
+Writing the test cases was more manageable, as
+I already have experience with API test automation but
+not without the guidnace of internet sources and Gen AI.
+
+The changes I introduced, particularly stricter access 
+control and rate limiting, required updates and additions 
+to the test suite. While I initially underestimated 
+the effort needed to align tests with these changes which
+took a lot of time too, the result is a set of reliable 
+test cases that help ensure the microblog API cannot be 
+spammed and is only accessible with proper authorization, 
+which is important from a security perspective.
