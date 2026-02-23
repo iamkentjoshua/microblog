@@ -14,7 +14,7 @@ def test_basic_auth_invalid_password(client):
     response = client.post(
         '/api/tokens',
         headers={
-            'Authorization': 'Basic YWxpY2U6d3Jvbmc='  # alice:wrong
+            'Authorization': 'Basic YWxpY2U6d3Jvbmc='
         }
     )
 

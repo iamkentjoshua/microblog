@@ -14,6 +14,13 @@ class TestConfig(Config):
 def app():
     app = create_app(TestConfig)
 
+    app.config.update(
+        TESTING=True,
+        WTF_CSRF_ENABLED=False,   
+        DEBUG=True,               
+        LOGIN_DISABLED=False,     
+    )
+
     ctx = app.app_context()
     ctx.push()
 

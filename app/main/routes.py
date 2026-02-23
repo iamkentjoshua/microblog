@@ -167,3 +167,69 @@ def search():
         if page > 1 else None
     return render_template('search.html', title=_('Search'), posts=posts,
                            next_url=next_url, prev_url=prev_url)
+
+
+@bp.route('/edit_post/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_post(id):
+    post = db.get_or_404(Post, id) # test if the post exists and return 404 if not
+
+    if post.author != current_user:
+        flash(_('You cannot edit this post.'))
+        return redirect(url_for('main.index'))
+
+    form = PostForm()
+    if form.validate_on_submit():
+        try:
+            language = detect(form.post.data)
+        except LangDetectException:
+            language = ''
+        post.body = form.post.data
+        post.language = language
+        db.session.commit()
+        flash(_('Your post has been updated.'))
+        return redirect(url_for('main.user', username=current_user.username))
+
+    if request.method == 'GET':
+        form.post.data = post.body
+
+    return render_template('edit_post.html', title=_('Edit Post'), form=form, post=post)
+
+@bp.route('/delete_post/<int:id>', methods=['POST'])
+@login_required
+def delete_post(id):
+    form = EmptyForm()
+    if not form.validate_on_submit():
+        return redirect(url_for('main.index'))
+
+    post = db.get_or_404(Post, id)
+
+    if post.author != current_user:
+        flash(_('This is not your post to delete.'))
+        return redirect(url_for('main.index'))
+
+    db.session.delete(post)
+    db.session.commit()
+    flash(_('Your post has been deleted.'))
+    return redirect(url_for('main.user', username=current_user.username))
+
+@bp.route('/seed_posts', methods=['POST'])
+@login_required
+def seed_posts():
+    if not current_app.debug:
+        return redirect(url_for('main.index'))
+
+    data = request.get_json(silent=True) or {}
+    count = int(data.get('count', 5))
+    count = max(1, min(count, 50))  # safety cap
+
+    for i in range(count):
+        body = f"Sample seed post #{i+1} by {current_user.username}"
+        try:
+            language = detect(body)
+        except LangDetectException:
+            language = ''
+        db.session.add(Post(body=body, author=current_user, language=language))
+
+    db.session.commit()
+    return {'created': count}
