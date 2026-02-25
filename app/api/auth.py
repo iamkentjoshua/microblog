@@ -1,6 +1,6 @@
 import sqlalchemy as sa
 from functools import wraps
-from flask import abort
+from flask import abort, g
 from flask_httpauth import HTTPBasicAuth, HTTPTokenAuth
 from app.extensions import db
 from app.models import User

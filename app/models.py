@@ -16,11 +16,9 @@ import secrets
 followers = sa.Table(
     'followers',
     db.metadata,
-    sa.Column('follower_id', sa.Integer, sa.ForeignKey('user.id'),
-              primary_key=True),
-    sa.Column('followed_id', sa.Integer, sa.ForeignKey('user.id'),
-              primary_key=True)
-    )
+    sa.Column('follower_id', sa.Integer, sa.ForeignKey('user.id', ondelete='CASCADE'), primary_key=True),
+    sa.Column('followed_id', sa.Integer, sa.ForeignKey('user.id', ondelete='CASCADE'), primary_key=True),
+)
 
 class SearchableMixin(object):
     @classmethod
@@ -97,7 +95,8 @@ class User(PaginatedAPIMixin, UserMixin, db.Model):
     password_hash: so.Mapped[Optional[str]] = so.mapped_column(sa.String(256))
 
     posts: so.WriteOnlyMapped['Post'] = so.relationship(
-        back_populates='author')
+        back_populates='author',
+        passive_deletes=True)
     about_me: so.Mapped[Optional[str]] = so.mapped_column(sa.String(140))
     last_seen: so.Mapped[Optional[datetime]] = so.mapped_column(
         default=lambda: datetime.now(timezone.utc))
@@ -105,11 +104,13 @@ class User(PaginatedAPIMixin, UserMixin, db.Model):
     following: so.WriteOnlyMapped['User'] = so.relationship(
         secondary=followers, primaryjoin=(followers.c.follower_id == id),
         secondaryjoin=(followers.c.followed_id == id),
-        back_populates='followers')
+        back_populates='followers',
+        passive_deletes=True)
     followers: so.WriteOnlyMapped['User'] = so.relationship(
         secondary=followers, primaryjoin=(followers.c.followed_id == id),
         secondaryjoin=(followers.c.follower_id == id),
-        back_populates='following')
+        back_populates='following',
+        passive_deletes=True)
     token: so.Mapped[Optional[str]] = so.mapped_column(
         sa.String(32), index=True, unique=True)
     token_expiration: so.Mapped[Optional[datetime]]
@@ -243,7 +244,7 @@ class Post(SearchableMixin, db.Model):
     body: so.Mapped[str] = so.mapped_column(sa.String(140))
     timestamp: so.Mapped[datetime] = so.mapped_column(
         index=True, default=lambda: datetime.now(timezone.utc))
-    user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey(User.id),
+    user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey(User.id, ondelete='CASCADE'),
                                                index=True)
 
     author: so.Mapped[User] = so.relationship(back_populates='posts')

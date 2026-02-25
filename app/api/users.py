@@ -3,23 +3,8 @@ from app.api import bp
 from app.models import User
 from app.api.auth import token_auth, role_required
 from app.api.errors import bad_request
-from flask import abort, request, url_for
+from flask import abort, jsonify, request, url_for
 from app.extensions import db, limiter
-
-@bp.route('/users/<int:id>', methods=['GET'])
-@token_auth.login_required
-def get_user(id):
-    return db.get_or_404(User, id).to_dict()
-
-@bp.route('/users', methods=['GET'])
-@token_auth.login_required
-@role_required('admin')
-@limiter.limit("30 per minute")
-def get_users():
-    page = request.args.get('page', 1, type=int)
-    per_page = min(request.args.get('per_page', 10, type=int), 100)
-    return User.to_collection_dict(sa.select(User), page, per_page,
-                                   'api.get_users')
 
 @bp.route('/users/<int:id>/followers', methods=['GET'])
 @token_auth.login_required
@@ -60,6 +45,22 @@ def create_user():
     return user.to_dict(), 201, {'Location': url_for('api.get_user',
                                                      id=user.id)}
 
+@bp.route('/users/<int:id>', methods=['GET'])
+@token_auth.login_required()
+def get_user(id):
+    user = db.get_or_404(User, id)
+    return jsonify(user.to_dict())
+
+@bp.route('/users', methods=['GET'])
+@token_auth.login_required
+@role_required('admin')
+@limiter.limit("30 per minute")
+def get_users():
+    page = request.args.get('page', 1, type=int)
+    per_page = min(request.args.get('per_page', 10, type=int), 100)
+    return User.to_collection_dict(sa.select(User), page, per_page,
+                                   'api.get_users')
+
 @bp.route('/users/<int:id>', methods=['PUT'])
 @token_auth.login_required
 @limiter.limit("20 per minute")
@@ -82,3 +83,18 @@ def update_user(id):
     user.from_dict(data, new_user=False)
     db.session.commit()
     return user.to_dict()
+
+@bp.route('/users/<int:id>', methods=['DELETE'])
+@token_auth.login_required
+@limiter.limit("5 per minute")
+def delete_user(id):
+    current_user = token_auth.current_user()
+    user = db.get_or_404(User, id)
+
+    # Ensure admin or self-delete only.
+    if current_user.id != id and current_user.role != 'admin':
+        abort(403)
+
+    db.session.delete(user)
+    db.session.commit()
+    return '', 204
